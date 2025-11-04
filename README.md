@@ -767,62 +767,7 @@ curl -X POST "http://localhost:8001/ai/predict/anomaly" \
 
 ---
 
-## 🆘 Need Help?
-
-### For Data Ingestion (Module A):
-1. Check [data-ingestion/QUICKSTART.md](data-ingestion/QUICKSTART.md)
-2. Review [data-ingestion/ARCHITECTURE.md](data-ingestion/ARCHITECTURE.md)
-3. Run tests: `cd data-ingestion && python -m pytest tests/ -v`
-4. Check logs: `tail -f data-ingestion/logs/ingestion_*.log`
-
-### For AI/ML Module (Module B2):
-1. Check [ai-ml/QUICKSTART.md](ai-ml/QUICKSTART.md)
-2. Review [ai-ml/ARCHITECTURE.md](ai-ml/ARCHITECTURE.md)
-3. See concepts: [ai-ml/EXPLANATION.md](ai-ml/EXPLANATION.md)
-4. View diagrams: [ai-ml/VISUAL_GUIDE.md](ai-ml/VISUAL_GUIDE.md)
-5. Run tests: `cd ai-ml && python -m pytest tests/ -v`
-6. Check logs: `tail -f ai-ml/logs/app_*.log`
-7. API docs: http://localhost:8001/docs
-
-## 📦 Technology Stack
-
-### Data Ingestion (Module A)
-- **Languages:** Python 3.8+
-- **APIs:** Google Maps, Twitter, Reddit
-- **Streaming:** Kafka, Firebase Realtime Database
-- **Libraries:** requests, googlemaps, tweepy, praw, kafka-python
-
-### AI/ML Intelligence (Module B2)
-- **Languages:** Python 3.10+
-- **Deep Learning:** PyTorch 2.0+, YOLOv8 (Ultralytics)
-- **Computer Vision:** OpenCV 4.8+
-- **ML Models:** scikit-learn (Isolation Forest), Facebook Prophet
-- **API Framework:** FastAPI 0.104+, Uvicorn
-- **Database:** Firebase Admin SDK, Firestore
-- **Testing:** pytest, pytest-asyncio
-
-## 🔄 Recent Updates
-
-### January 2025
-- ✅ **Module B2 Complete**: Vision Intelligence and Predictive Analytics fully implemented
-- ✅ Added YOLOv8-based image classification (13 event types)
-- ✅ Implemented video frame analysis
-- ✅ Built Isolation Forest anomaly detector
-- ✅ Integrated Facebook Prophet for time series forecasting
-- ✅ Created FastAPI REST API with 7 endpoints
-- ✅ Added comprehensive test suite and documentation
-
-### October 2024
-- ✅ **Module A Complete**: Data Ingestion pipeline operational
-- ✅ Integrated Google Maps traffic API
-- ✅ Added Twitter/Reddit social media monitoring
-- ✅ Implemented Kafka and Firebase streaming
-- ✅ Created monitoring dashboard
-
----
-
 **Built with ❤️ for SmartCitySense**
 
 *Making Bangalore smarter, one event at a time.* 🏙️
 
-**Status:** 2/5 Modules Complete | Next: Text Processing (Member B1), Backend (Member D), Frontend (Member C)

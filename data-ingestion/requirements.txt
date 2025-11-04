@@ -1,0 +1,14 @@
+requests>=2.31.0
+python-dotenv>=1.0.0
+kafka-python>=2.0.2
+googlemaps>=4.10.0
+tweepy>=4.14.0
+praw>=7.7.1  # Reddit API
+firebase-admin>=6.2.0
+schedule>=1.2.0
+pydantic>=2.5.0
+aiohttp>=3.9.0
+tenacity>=8.2.3  # Retry logic
+python-dateutil>=2.8.2
+geopy>=2.4.1  # Geocoding
+firebase-admin>=6.0.0

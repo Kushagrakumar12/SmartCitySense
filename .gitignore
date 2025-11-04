@@ -1,0 +1,164 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.cache
+nosetests.xml
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Firebase credentials
+firebase-credentials.json
+**/firebase-credentials.json
+
+# Node.js / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Production build
+build/
+dist/
+
+# Cache directories
+cache/
+.cache/
+*.cache
+
+# ML Models (large files)
+*.h5
+*.keras
+*.pkl
+*.joblib
+*.pt
+!yolov8n.pt
+
+# Data files
+data/
+*.csv
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!next.config.mjs
+!postcss.config.js
+
+# Test data
+test_data/
+test_images/
+test_videos/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+
+# Docker
+.dockerignore
+
+# Kafka
+kafka-logs/
+zookeeper/
+
+# Monitoring
+monitoring_data/
+
+# Local development
+local_config.py
+local_settings.py
+
+# IDE
+*.sublime-project
+*.sublime-workspace

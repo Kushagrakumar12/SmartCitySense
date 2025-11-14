@@ -51,13 +51,13 @@
 - Persistent storage
 
 ### 🤖 AI/ML Module
-**Text Intelligence (B1)**:
+**Text Intelligence **:
 - Sentiment analysis using transformers
 - Named Entity Recognition (NER)
 - Topic modeling and classification
 - Multi-language support
 
-**Vision & Predictive (B2)**:
+**Vision & Predictive **:
 - Event detection from images/videos (YOLOv8)
 - Anomaly detection (Isolation Forest)
 - Time series forecasting (Prophet)
@@ -469,49 +469,6 @@ python main.py --help
 - Implements business logic
 - Manages authentication and authorization
 
-## � Module Status Dashboard
-
-| Module | Owner | Status | Components | Lines of Code | Tests | Docs |
-|--------|-------|--------|------------|---------------|-------|------|
-| **Data Ingestion** | Member A | ✅ Complete | 3 connectors, 2 pipelines | ~1,500 | ✅ | ✅ |
-| **AI/ML Intelligence** | Member B2 | ✅ Complete | Vision + Predictive | ~2,600 | ✅ | ✅ |
-| **Text Processing** | Member B1 | 🚧 Pending | NLP, Sentiment | - | - | - |
-| **Backend API** | Member D | 🚧 Pending | REST API, Auth | - | - | - |
-| **Frontend** | Member C | 🚧 Pending | React Dashboard | - | - | - |
-
-### Completed Features
-
-**Module A (Data Ingestion):**
-- ✅ Google Maps traffic API integration
-- ✅ Twitter/Reddit social media monitoring
-- ✅ Government civic portal scraping
-- ✅ Kafka and Firebase streaming
-- ✅ Real-time monitoring dashboard
-- ✅ Comprehensive error handling
-
-**Module B2 (AI/ML Intelligence):**
-- ✅ YOLOv8 image classification (13 event types)
-- ✅ Video frame analysis
-- ✅ Isolation Forest anomaly detection
-- ✅ Facebook Prophet time series forecasting
-- ✅ FastAPI REST endpoints (7 routes)
-- ✅ Firebase integration
-- ✅ Real-time alert generation
-
-## 📅 Development Timeline
-
-### Module A: Data Ingestion
-- ✅ Week 1: API integrations and streaming
-- ✅ Week 2: Testing and optimization
-- ✅ Status: Production-ready
-
-### Module B2: AI/ML Intelligence
-- ✅ Week 1: Vision pipeline (YOLOv8)
-- ✅ Week 2: Predictive models (Isolation Forest, Prophet)
-- ✅ Week 3: REST API and integration
-- ✅ Week 4: Testing and documentation
-- ✅ Status: Production-ready
-
 ## 🐛 Troubleshooting
 
 ### Import errors in VS Code
@@ -541,26 +498,6 @@ python main.py --mode scheduled --interval 10
 - **[QUICKSTART.md](QUICKSTART.md)** - Setup and usage guide
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design details
 - **[.env.example](.env.example)** - Configuration template
-
-## 🎯 Success Criteria
-
-### Module A: Data Ingestion ✅
-- ✅ 3+ data sources integrated (Google Maps, Twitter, Reddit, Civic Portals)
-- ✅ Real-time event streaming (Kafka + Firebase)
-- ✅ < 5% error rate with fallback mechanisms
-- ✅ Monitoring dashboard
-- ✅ Complete documentation (README, QUICKSTART, ARCHITECTURE)
-- ✅ Integration tests passing
-
-### Module B2: AI/ML Intelligence ✅
-- ✅ Vision intelligence with YOLOv8 (13 event types)
-- ✅ Video analysis capability
-- ✅ Anomaly detection with Isolation Forest
-- ✅ Time series forecasting with Prophet
-- ✅ REST API with 7 endpoints
-- ✅ Firebase integration
-- ✅ Comprehensive test suite
-- ✅ Extensive documentation (6 guides)
 
 ## ⚙️ Configuration
 
@@ -754,18 +691,6 @@ curl -X POST "http://localhost:8001/ai/predict/anomaly" \
     "longitude": 77.5946
   }'
 ```
-
-## 👥 Team
-
-| Member | Role | Module | Status |
-|--------|------|--------|--------|
-| **Member A** | Data Ingestion Lead | Data Collection | ✅ Complete |
-| **Member B2** | AI/ML Engineer | Vision & Predictive | ✅ Complete |
-| **Member B1** | NLP Engineer | Text Processing | 🚧 Pending |
-| **Member D** | Backend Engineer | REST API & Auth | 🚧 Pending |
-| **Member C** | Frontend Engineer | React Dashboard | 🚧 Pending |
-
----
 
 **Built with ❤️ for SmartCitySense**
 

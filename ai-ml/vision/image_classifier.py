@@ -4,10 +4,14 @@ Uses YOLOv8 for object detection and event classification from user-uploaded ima
 """
 
 import time
+import ipaddress
+import socket
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
+from urllib.parse import urlparse
 import cv2
 import numpy as np
+import requests
 from PIL import Image
 import torch
 from ultralytics import YOLO
@@ -70,11 +74,19 @@ class ImageClassifier:
             
             # Move model to appropriate device
             self.model.to(self.device)
+            self._gate_mappings_to_model()
             logger.success(f"Model loaded successfully on {self.device}")
             
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise
+
+    def _gate_mappings_to_model(self) -> None:
+        """Disable mappings absent from the loaded model's class vocabulary."""
+        model_names = self.model.names
+        available_names = set(model_names.values() if isinstance(model_names, dict) else model_names)
+        for class_name, mapping in self.event_mappings.items():
+            mapping["requires_custom_weights"] = class_name not in available_names
     
     def _initialize_event_mappings(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -210,10 +222,46 @@ class ImageClassifier:
             elif isinstance(image_path, str):
                 if image_path.startswith(('http://', 'https://')):
                     # Download image from URL
-                    import requests
                     from io import BytesIO
-                    response = requests.get(image_path, timeout=10)
-                    pil_image = Image.open(BytesIO(response.content))
+                    parsed = urlparse(image_path)
+                    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+                        raise ValueError("Image URL must use HTTP or HTTPS")
+                    host = parsed.hostname
+                    addresses = set()
+                    try:
+                        addresses.add(str(ipaddress.ip_address(host)))
+                    except ValueError:
+                        pass
+                    try:
+                        addresses.update(
+                            address[4][0]
+                            for address in socket.getaddrinfo(host, None)
+                        )
+                    except socket.gaierror as exc:
+                        raise ValueError("Image URL host could not be resolved") from exc
+                    if any(
+                        ipaddress.ip_address(address).is_private
+                        or ipaddress.ip_address(address).is_loopback
+                        or ipaddress.ip_address(address).is_link_local
+                        for address in addresses
+                    ):
+                        raise ValueError("Image URL host is not allowed")
+
+                    max_bytes = config.vision.max_remote_image_size_mb * 1024 * 1024
+                    response = requests.get(
+                        image_path,
+                        stream=True,
+                        timeout=config.vision.remote_image_timeout_seconds,
+                    )
+                    response.raise_for_status()
+                    content = bytearray()
+                    for chunk in response.iter_content(chunk_size=64 * 1024):
+                        content.extend(chunk)
+                        if len(content) > max_bytes:
+                            raise ValueError("Remote image exceeds the configured size limit")
+                    pil_image = Image.open(BytesIO(content))
+                    pil_image.verify()
+                    pil_image = Image.open(BytesIO(content))
                     image = np.array(pil_image.convert('RGB'))
                 else:
                     # Load from local file
@@ -276,7 +324,15 @@ class ImageClassifier:
             class_name = obj.class_name.lower()
             
             # Check if object maps to known event
-            if class_name in self.event_mappings:
+            if class_name in self.event_mappings and not self.event_mappings[class_name].get(
+                "requires_custom_weights", False
+            ):
+                if class_name == "person":
+                    person_count = sum(
+                        1 for item in detected_objects if item.class_name.lower() == "person"
+                    )
+                    if person_count < config.vision.protest_min_persons:
+                        continue
                 mapping = self.event_mappings[class_name]
                 event_type = mapping["event_type"]
                 severity = mapping["severity"]
@@ -320,7 +376,7 @@ class ImageClassifier:
         person_count = sum(1 for obj in detected_objects if obj.class_name.lower() == "person")
         if person_count > 20:
             return EventType.PROTEST, SeverityLevel.HIGH
-        elif person_count > 10:
+        elif person_count >= config.vision.protest_min_persons:
             return EventType.PROTEST, SeverityLevel.MEDIUM
         
         return EventType.OTHER, SeverityLevel.LOW

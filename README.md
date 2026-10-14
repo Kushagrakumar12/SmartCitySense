@@ -477,7 +477,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Member A**: Data Ingestion & Processing
 - **Member B1**: Text Intelligence (Summarization & Sentiment)
-- **Member B2**: Vision & Predictive Analytics
+- **Member B2**: Vision & Predictive Analytics — [harini032424 (Harini J)](https://github.com/harini032424)
 - **Member C**: Frontend Dashboard
 - **Member D**: Backend API Integration
 

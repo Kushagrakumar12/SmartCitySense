@@ -11,6 +11,7 @@ from pathlib import Path
 import tempfile
 import aiofiles
 from contextlib import asynccontextmanager
+from PIL import Image
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -216,32 +217,39 @@ async def analyze_image(
         logger.info(f"[{request_id}] Received image analysis request")
         
         # Validate file type
-        if not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="File must be an image")
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=415, detail="Unsupported media type; upload an image")
         
         # Check file size
         max_size = config.api.max_upload_size_mb * 1024 * 1024
         
         # Save uploaded file temporarily
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
-        
-        async with aiofiles.open(temp_file.name, 'wb') as f:
-            content = await file.read()
-            
-            if len(content) > max_size:
-                raise HTTPException(
-                    status_code=413,
-                    detail=f"File too large. Max size: {config.api.max_upload_size_mb}MB"
-                )
-            
-            await f.write(content)
-        
-        # Analyze image
-        classifier = get_vision_classifier()
-        result = classifier.classify_image(temp_file.name, save_debug=config.save_debug_images)
-        
-        # Clean up temp file
-        Path(temp_file.name).unlink(missing_ok=True)
+        suffix = Path(file.filename or "").suffix or ".img"
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        temp_path = Path(temp_file.name)
+        temp_file.close()
+        try:
+            bytes_read = 0
+            async with aiofiles.open(temp_path, 'wb') as f:
+                while chunk := await file.read(1024 * 1024):
+                    bytes_read += len(chunk)
+                    if bytes_read > max_size:
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"File too large. Max size: {config.api.max_upload_size_mb}MB"
+                        )
+                    await f.write(chunk)
+
+            try:
+                with Image.open(temp_path) as image:
+                    image.verify()
+            except (OSError, ValueError) as exc:
+                raise HTTPException(status_code=400, detail="Uploaded file is not a valid image") from exc
+
+            classifier = get_vision_classifier()
+            result = classifier.classify_image(str(temp_path), save_debug=config.save_debug_images)
+        finally:
+            temp_path.unlink(missing_ok=True)
         
         # Save to Firebase in background
         if background_tasks:
@@ -260,7 +268,7 @@ async def analyze_image(
         raise
     except Exception as e:
         logger.error(f"[{request_id}] Image analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Image analysis failed") from e
 
 
 @app.post("/ai/vision/video", response_model=VisionAnalysisResponse)
@@ -359,6 +367,7 @@ async def detect_anomaly(request: PredictionRequest, background_tasks: Backgroun
         all_results = []
         recommendations = []
         affected_areas = set()
+        selected_alert_type = None
         
         for event_type in event_types:
             anomaly_result = detector.detect_anomaly(
@@ -371,13 +380,16 @@ async def detect_anomaly(request: PredictionRequest, background_tasks: Backgroun
                 all_results.append(anomaly_result)
                 
                 # Generate alert message
-                alert_msg, alert_type = detector.generate_alert_message(
+                alert = detector.generate_alert_message(
                     anomaly_result,
                     event_type.value,
                     request.location
                 )
-                
-                recommendations.append(alert_msg)
+                if alert:
+                    alert_msg, alert_type = alert
+                    recommendations.append(alert_msg)
+                    if selected_alert_type is None:
+                        selected_alert_type = alert_type
                 
                 if request.location:
                     affected_areas.add(request.location)
@@ -396,7 +408,7 @@ async def detect_anomaly(request: PredictionRequest, background_tasks: Backgroun
         
         response = PredictionResponse(
             alert=recommendations[0] if recommendations else None,
-            alert_type=AlertType.ANOMALY if all_results else None,
+            alert_type=selected_alert_type if all_results else None,
             severity=severity,
             anomaly_result=most_anomalous,
             recommendations=recommendations,
@@ -449,7 +461,10 @@ async def forecast_events(request: PredictionRequest):
                 
                 # Check for peaks in forecast
                 max_forecast = max(forecast_results, key=lambda f: f.predicted_value)
-                if max_forecast.predicted_value > 10:  # Threshold
+                threshold = config.predictive.forecast_alert_thresholds.get(
+                    event_type.value, 10.0
+                )
+                if max_forecast.predicted_value > threshold:
                     recommendations.append(
                         f"High {event_type.value} activity predicted around {max_forecast.forecast_timestamp.strftime('%H:%M')}"
                     )
@@ -460,7 +475,7 @@ async def forecast_events(request: PredictionRequest):
             alert=None,
             alert_type=AlertType.FORECAST if all_forecasts else None,
             severity=SeverityLevel.LOW,
-            forecast_results=all_forecasts[:24],  # Limit to 24 hours
+            forecast_results=all_forecasts,
             recommendations=recommendations,
             affected_areas=[request.location] if request.location else [],
             processing_time_ms=processing_time
@@ -471,7 +486,7 @@ async def forecast_events(request: PredictionRequest):
         
     except Exception as e:
         logger.error(f"[{request_id}] Forecasting failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Forecasting failed") from e
 
 
 # ========================================

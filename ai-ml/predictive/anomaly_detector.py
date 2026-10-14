@@ -169,7 +169,9 @@ class AnomalyDetector:
             
             # Method 1: Statistical analysis (always available)
             baseline_count = self._calculate_baseline(event_type, location)
-            statistical_anomaly = event_count > (baseline_count * 2.5)
+            statistical_anomaly = event_count > (
+                baseline_count * config.predictive.anomaly_baseline_multiplier
+            )
             
             # Method 2: ML-based detection (if trained)
             ml_anomaly_score = 0.0
@@ -239,7 +241,8 @@ class AnomalyDetector:
         - Day of week
         """
         # Aggregate by hour and location
-        data['hour'] = data['timestamp'].dt.floor('H')
+        data = data.copy()
+        data['hour'] = data['timestamp'].dt.floor('h')
         data['hour_of_day'] = data['timestamp'].dt.hour
         data['day_of_week'] = data['timestamp'].dt.dayofweek
         
@@ -329,11 +332,11 @@ class AnomalyDetector:
     
     def _calculate_severity(self, anomaly_score: float, event_count: int) -> SeverityLevel:
         """Calculate severity level based on anomaly score and count"""
-        if anomaly_score >= 0.9 or event_count > 20:
+        if anomaly_score >= config.predictive.severity_critical_threshold or event_count > 20:
             return SeverityLevel.CRITICAL
-        elif anomaly_score >= 0.75 or event_count > 10:
+        elif anomaly_score >= config.predictive.severity_high_threshold or event_count > 10:
             return SeverityLevel.HIGH
-        elif anomaly_score >= 0.6 or event_count > 5:
+        elif anomaly_score >= config.predictive.severity_medium_threshold or event_count > 5:
             return SeverityLevel.MEDIUM
         else:
             return SeverityLevel.LOW
@@ -365,7 +368,7 @@ class AnomalyDetector:
         anomaly_result: AnomalyResult,
         event_type: Optional[str] = None,
         location: Optional[str] = None
-    ) -> Tuple[str, AlertType]:
+    ) -> Optional[Tuple[str, AlertType]]:
         """
         Generate alert message from anomaly result
         
@@ -373,7 +376,7 @@ class AnomalyDetector:
             Tuple of (alert_message, alert_type)
         """
         if not anomaly_result.is_anomaly:
-            return "", None
+            return None
         
         # Determine alert type
         alert_type_map = {

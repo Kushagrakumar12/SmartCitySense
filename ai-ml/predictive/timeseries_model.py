@@ -6,7 +6,7 @@ Uses Facebook Prophet for forecasting future event patterns
 import time
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
@@ -47,7 +47,7 @@ class TimeSeriesForecaster:
         self,
         event_type: str,
         historical_data: Optional[pd.DataFrame] = None
-    ):
+    ) -> bool:
         """
         Train Prophet model for specific event type
         
@@ -64,14 +64,14 @@ class TimeSeriesForecaster:
             
             if historical_data.empty:
                 logger.warning(f"No historical data for {event_type}")
-                return
+                return False
             
             # Prepare data for Prophet
             prophet_df = self._prepare_prophet_data(historical_data)
             
             if len(prophet_df) < 10:
                 logger.warning(f"Insufficient data for {event_type}: {len(prophet_df)} samples")
-                return
+                return False
             
             # Create and train model
             model = Prophet(
@@ -89,6 +89,7 @@ class TimeSeriesForecaster:
             self._save_model(event_type, model)
             
             logger.success(f"Model trained for {event_type} on {len(prophet_df)} samples")
+            return True
             
         except Exception as e:
             logger.error(f"Training failed for {event_type}: {e}")
@@ -97,8 +98,7 @@ class TimeSeriesForecaster:
     def forecast(
         self,
         event_type: str,
-        periods: Optional[int] = None,
-        location: Optional[str] = None
+        periods: Optional[int] = None
     ) -> List[ForecastResult]:
         """
         Generate forecast for event type
@@ -106,7 +106,10 @@ class TimeSeriesForecaster:
         Args:
             event_type: Event type to forecast
             periods: Number of hours to forecast (default: from config)
-            location: Specific location to forecast for
+
+        Forecasts use event-type models and are not location-specific. The
+        API retains location as response metadata until location-specific
+        models are available.
         
         Returns:
             List of ForecastResult objects
@@ -131,7 +134,7 @@ class TimeSeriesForecaster:
             model = self.models[event_type]
             
             # Create future dataframe
-            future = model.make_future_dataframe(periods=periods, freq='H')
+            future = model.make_future_dataframe(periods=periods, freq='h')
             
             # Generate forecast
             forecast = model.predict(future)
@@ -156,7 +159,7 @@ class TimeSeriesForecaster:
             
         except Exception as e:
             logger.error(f"Forecasting failed for {event_type}: {e}")
-            return []
+            raise
     
     def detect_trend(
         self,
@@ -193,7 +196,7 @@ class TimeSeriesForecaster:
             df = df.set_index('timestamp')
             
             # Resample to hourly counts
-            hourly_counts = df.resample('H').size()
+            hourly_counts = df.resample('h').size()
             
             if len(hourly_counts) < 3:
                 return {
@@ -272,8 +275,8 @@ class TimeSeriesForecaster:
         Prophet expects columns: 'ds' (datetime) and 'y' (value)
         """
         # Resample to hourly counts
-        data = data.set_index('timestamp')
-        hourly_counts = data.resample('H').size().reset_index()
+        data = data.copy().set_index('timestamp')
+        hourly_counts = data.resample('h').size().reset_index()
         hourly_counts.columns = ['ds', 'y']
         
         return hourly_counts

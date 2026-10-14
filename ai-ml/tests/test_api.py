@@ -3,8 +3,10 @@ import pytest
 from fastapi.testclient import TestClient
 import io
 from PIL import Image
+from unittest.mock import patch
 
 from main import app
+from utils.schemas import EventType, SeverityLevel, VisionAnalysisResponse
 
 
 @pytest.fixture
@@ -49,14 +51,22 @@ class TestVisionEndpoints:
     
     def test_analyze_image(self, client, sample_image_file):
         """Test image analysis endpoint"""
-        response = client.post(
-            "/ai/vision/image",
-            files={"file": ("test.jpg", sample_image_file, "image/jpeg")},
-            data={"location": "Test Location"}
-        )
+        mock_classifier = patch("main.get_vision_classifier")
+        with mock_classifier as get_classifier:
+            get_classifier.return_value.classify_image.return_value = VisionAnalysisResponse(
+                event_type=EventType.OTHER,
+                description="Mocked image result",
+                confidence=0.9,
+                severity=SeverityLevel.LOW,
+                processing_time_ms=1,
+            )
+            response = client.post(
+                "/ai/vision/image",
+                files={"file": ("test.jpg", sample_image_file, "image/jpeg")},
+                data={"location": "Test Location"}
+            )
         
-        # Might fail if models not loaded, but should return proper error
-        assert response.status_code in [200, 500]
+        assert response.status_code == 200
         
         if response.status_code == 200:
             data = response.json()
@@ -72,7 +82,22 @@ class TestVisionEndpoints:
             files={"file": ("test.txt", text_file, "text/plain")}
         )
         
+        assert response.status_code == 415
+
+    def test_analyze_image_rejects_invalid_image(self, client):
+        response = client.post(
+            "/ai/vision/image",
+            files={"file": ("test.jpg", io.BytesIO(b"not an image"), "image/jpeg")}
+        )
         assert response.status_code == 400
+
+    def test_analyze_image_rejects_oversized_upload(self, client, monkeypatch):
+        monkeypatch.setattr("main.config.api.max_upload_size_mb", 1)
+        response = client.post(
+            "/ai/vision/image",
+            files={"file": ("test.jpg", io.BytesIO(b"x" * (1024 * 1024 + 1)), "image/jpeg")}
+        )
+        assert response.status_code == 413
 
 
 class TestPredictiveEndpoints:
@@ -87,8 +112,7 @@ class TestPredictiveEndpoints:
         
         response = client.post("/ai/predict/anomaly", json=request_data)
         
-        # Should work even with no data
-        assert response.status_code in [200, 500]
+        assert response.status_code == 200
         
         if response.status_code == 200:
             data = response.json()
@@ -103,8 +127,7 @@ class TestPredictiveEndpoints:
         
         response = client.post("/ai/predict/forecast", json=request_data)
         
-        # Might fail if no trained models
-        assert response.status_code in [200, 500]
+        assert response.status_code == 200
 
 
 if __name__ == "__main__":

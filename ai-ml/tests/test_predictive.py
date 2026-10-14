@@ -3,6 +3,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from predictive.anomaly_detector import AnomalyDetector
 from predictive.timeseries_model import TimeSeriesForecaster
@@ -24,7 +25,7 @@ def time_series_forecaster():
 @pytest.fixture
 def sample_historical_data():
     """Create sample historical data"""
-    dates = pd.date_range(start='2025-09-01', end='2025-10-01', freq='H')
+    dates = pd.date_range(start='2025-09-01', end='2025-10-01', freq='h')
     data = {
         'timestamp': dates,
         'event_type': ['traffic'] * len(dates),
@@ -67,14 +68,38 @@ class TestAnomalyDetector:
     
     def test_train_with_data(self, anomaly_detector, sample_historical_data):
         """Test training with sample data"""
-        # Training might fail if not enough variation in data
-        # This is expected behavior
-        try:
-            anomaly_detector.train(sample_historical_data)
-            # If training succeeds, model should be trained
-            # Note: might not succeed with uniform sample data
-        except Exception:
-            pass
+        anomaly_detector.train(sample_historical_data)
+        assert anomaly_detector.is_trained is True
+
+    def test_prepare_features_does_not_mutate_input(self, anomaly_detector):
+        data = pd.DataFrame({
+            "timestamp": pd.date_range("2025-10-01", periods=2, freq="h"),
+            "event_type": ["traffic", "traffic"],
+            "location": ["MG Road", "MG Road"],
+        })
+        original_columns = data.columns.tolist()
+        anomaly_detector._prepare_features(data)
+        assert data.columns.tolist() == original_columns
+
+    def test_below_minimum_reports_is_not_anomaly(self, anomaly_detector):
+        with patch("predictive.anomaly_detector.firebase_client.get_recent_events", return_value=[]):
+            result = anomaly_detector.detect_anomaly("traffic", "MG Road")
+        assert result.is_anomaly is False
+        assert result.severity == SeverityLevel.LOW
+
+    def test_alert_message_and_type(self, anomaly_detector):
+        anomaly = type("Result", (), {
+            "is_anomaly": True, "event_count": 12
+        })()
+        message, alert_type = anomaly_detector.generate_alert_message(
+            anomaly, "traffic", "MG Road"
+        )
+        assert "traffic surge" in message
+        assert alert_type.value == "traffic_surge"
+
+    def test_non_anomaly_has_no_alert(self, anomaly_detector):
+        result = type("Result", (), {"is_anomaly": False})()
+        assert anomaly_detector.generate_alert_message(result, "traffic") is None
 
 
 class TestTimeSeriesForecaster:

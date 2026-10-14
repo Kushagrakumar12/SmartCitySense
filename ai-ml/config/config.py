@@ -5,7 +5,7 @@ Loads environment variables and provides centralized config access
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 import torch
@@ -33,6 +33,9 @@ class VisionConfig(BaseModel):
     max_image_size: int = Field(default=1280)
     max_video_duration: int = Field(default=30)
     max_video_frames: int = Field(default=60)
+    max_remote_image_size_mb: int = Field(default=10, ge=1)
+    remote_image_timeout_seconds: int = Field(default=10, ge=1)
+    protest_min_persons: int = Field(default=10, ge=1)
 
 
 class PredictiveConfig(BaseModel):
@@ -46,6 +49,18 @@ class PredictiveConfig(BaseModel):
     prediction_window_minutes: int = Field(default=15)
     min_reports_for_anomaly: int = Field(default=5)
     alert_cooldown_minutes: int = Field(default=30)
+    anomaly_baseline_multiplier: float = Field(default=2.5, ge=1.0)
+    severity_medium_threshold: float = Field(default=0.6, ge=0.0, le=1.0)
+    severity_high_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
+    severity_critical_threshold: float = Field(default=0.9, ge=0.0, le=1.0)
+    forecast_alert_thresholds: Dict[str, float] = Field(
+        default={
+            "traffic": 10.0,
+            "power_outage": 5.0,
+            "flooding": 5.0,
+            "accident": 3.0,
+        }
+    )
 
 
 class TextConfig(BaseModel):
@@ -131,6 +146,9 @@ class Config:
             max_image_size=int(os.getenv("MAX_IMAGE_SIZE", "1280")),
             max_video_duration=int(os.getenv("MAX_VIDEO_DURATION_SECONDS", "30")),
             max_video_frames=int(os.getenv("MAX_VIDEO_FRAMES", "60")),
+            max_remote_image_size_mb=int(os.getenv("MAX_REMOTE_IMAGE_SIZE_MB", "10")),
+            remote_image_timeout_seconds=int(os.getenv("REMOTE_IMAGE_TIMEOUT_SECONDS", "10")),
+            protest_min_persons=int(os.getenv("PROTEST_MIN_PERSONS", "10")),
         )
     
     def _load_predictive_config(self) -> PredictiveConfig:
@@ -145,6 +163,10 @@ class Config:
             prediction_window_minutes=int(os.getenv("PREDICTION_WINDOW_MINUTES", "15")),
             min_reports_for_anomaly=int(os.getenv("MIN_REPORTS_FOR_ANOMALY", "5")),
             alert_cooldown_minutes=int(os.getenv("ALERT_COOLDOWN_MINUTES", "30")),
+            anomaly_baseline_multiplier=float(os.getenv("ANOMALY_BASELINE_MULTIPLIER", "2.5")),
+            severity_medium_threshold=float(os.getenv("SEVERITY_MEDIUM_THRESHOLD", "0.6")),
+            severity_high_threshold=float(os.getenv("SEVERITY_HIGH_THRESHOLD", "0.75")),
+            severity_critical_threshold=float(os.getenv("SEVERITY_CRITICAL_THRESHOLD", "0.9")),
         )
     
     def _load_text_config(self) -> TextConfig:
